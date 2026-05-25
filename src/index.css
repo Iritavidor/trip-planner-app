@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* צבעים */
+  --bg: #e8f3e9;
+  --surface: #F7F5EF;
+  --lime: #C5D930;
+  --ink: #1A1A1A;
+  --muted: #7A7468;
+  --olive: #3D4A2A;
+
+  /* רדיוסים */
+  --r-card: 24px;
+  --r-soft: 16px;
+  --r-pill: 100px;
+
+  /* ריווח */
+  --pad-card: 22px;
+  --gap: 16px;
+
+  /* צל */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Heebo', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+input, textarea, select {
+  background: var(--surface);
+}
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+
+@layer components {
+  .btn {
+    @apply px-4 py-2.5 font-semibold transition active:scale-[0.98];
+    border-radius: var(--r-pill);
+  }
+  /* כפתור פעולה ראשי – גלולה מלאה בצבע ליים, טקסט כהה מודגש */
+  .btn-primary {
+    @apply font-bold text-center transition active:scale-[0.98];
+    color: var(--ink);
+    background: var(--lime);
+    border: none;
+    border-radius: var(--r-pill);
+    padding: 15px 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  /* כפתור משני – גבול דק, ללא מילוי */
+  .btn-ghost {
+    @apply btn;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid rgba(26, 26, 26, 0.15);
+  }
+  .btn-gold { @apply btn-primary; }
+  .card {
+    background: var(--surface);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-soft);
+    padding: var(--pad-card);
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 text-[12px] font-semibold;
+    color: var(--ink);
+    background: var(--bg);
+    border-radius: var(--r-pill);
+    padding: 4px 12px;
+  }
+  .field {
+    @apply w-full px-3.5 py-2.5 text-[14px] focus:outline-none;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid rgba(26, 26, 26, 0.1);
+    border-radius: var(--r-soft);
+  }
+  .field:focus { border-color: var(--olive); }
+  .label {
+    @apply block text-[12px] font-medium mb-1;
+    color: var(--muted);
+  }
+}
