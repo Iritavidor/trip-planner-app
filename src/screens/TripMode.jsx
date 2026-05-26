@@ -131,8 +131,20 @@ export default function TripMode() {
                   </div>
                 )}
                 {day.notes && (
-                  <div className="card text-[14px] leading-relaxed whitespace-pre-wrap">
-                    {day.notes}
+                  <div className="card">
+                    <div className="flex justify-end gap-3 mb-2 text-brand-muted">
+                      <button title="עריכת הערה" onClick={() => {
+                        const text = prompt('עריכת הערה:', day.notes);
+                        if (text == null) return;
+                        dispatch({ type: 'UPDATE_DAY', dayNumber: dayNum, patch: { notes: text.trim() } });
+                      }}>✏️</button>
+                      <button title="מחיקת הערה" onClick={() => {
+                        if (confirm('למחוק את ההערה?')) dispatch({ type: 'UPDATE_DAY', dayNumber: dayNum, patch: { notes: '' } });
+                      }}>🗑</button>
+                    </div>
+                    <div className="text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {day.notes}
+                    </div>
                   </div>
                 )}
               </div>
