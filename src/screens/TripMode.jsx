@@ -35,7 +35,7 @@ function todayDayNumber(days) {
 }
 
 export default function TripMode() {
-  const { state } = useTrip();
+  const { state, dispatch } = useTrip();
   const initial = useMemo(() => todayDayNumber(state.days), []);
   const [dayNum, setDayNum] = useState(initial);
   const [view, setView] = useState('day');
@@ -96,8 +96,14 @@ export default function TripMode() {
               <button className="w-9 h-9 rounded-full hover:bg-black/[0.04] flex items-center justify-center text-lg leading-none pb-2 text-brand-muted">···</button>
             </div>
             <div className="flex gap-4 text-[13px] font-semibold text-brand-olive mb-6">
-              <button>+ הוסף הערה</button>
-              <button>בחר הכל</button>
+              <button onClick={() => {
+                const text = prompt('הוספת הערה ליום:', '');
+                if (text == null) return;
+                const trimmed = text.trim();
+                if (!trimmed) return;
+                const notes = day.notes ? `${day.notes}\n${trimmed}` : trimmed;
+                dispatch({ type: 'UPDATE_DAY', dayNumber: dayNum, patch: { notes } });
+              }}>+ הוסף הערה</button>
             </div>
 
             <DayProgress date={day.date} />

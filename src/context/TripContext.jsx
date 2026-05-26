@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from 'react';
 import { readDocx } from '../utils/readDocx.js';
 import { parseTripText } from '../utils/parseTripText.js';
+import { supabase } from '../lib/supabase.js';
 
 const STORAGE_KEY = 'china-trip-data-v1';
 const MODE_KEY = 'china-trip-mode-v1';
@@ -99,6 +100,49 @@ function makeInitialData() {
   };
 }
 
+// מבנה ריק תקני של טיול — לשימוש כברירת מחדל בעת מיזוג נתונים מהענן
+function baseShape() {
+  return {
+    meta: { title: '', dates: { start: '', end: '' }, country: '', travelers: '' },
+    description: '',
+    budget: '',
+    emergencyContacts: '',
+    flights: [],
+    hotels: [],
+    days: {},
+    packing: [],
+    todos: [],
+    todosMonth: [],
+    todosTwoWeeks: [],
+    todosWeek: [],
+    todosDay: [],
+    generalNotes: ''
+  };
+}
+
+// יצירת טיול חדש וריק לפי קלט המשתמש (שם, יעד, תאריך התחלה, מספר ימים)
+function makeNewTripData({ title, country, startDate, numDays }) {
+  const n = Math.max(1, Math.min(90, Number(numDays) || 1));
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setHours(0, 0, 0, 0);
+  const days = {};
+  for (let i = 1; i <= n; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + (i - 1));
+    days[i] = { dayNumber: i, date: d.toISOString().slice(0, 10), city: '', activities: [], restaurant: '', notes: '' };
+  }
+  return {
+    ...baseShape(),
+    meta: {
+      title: title || 'טיול חדש',
+      dates: { start: days[1].date, end: days[n].date },
+      country: country || '',
+      travelers: ''
+    },
+    days
+  };
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -189,11 +233,137 @@ const TripContext = createContext(null);
 
 export function TripProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, load);
-  const [mode, setMode] = React.useState(() => localStorage.getItem(MODE_KEY) || 'planning');
+  const [mode, setMode] = useState(() => localStorage.getItem(MODE_KEY) || 'planning');
 
+  // --- Auth / Supabase ---
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [guest, setGuest] = useState(false);
+  const [trips, setTrips] = useState([]);                 // רשימת הטיולים של המשתמש המחובר
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [activeTripId, setActiveTripId] = useState(null); // הטיול הפתוח כרגע (null = מסך "הטיולים שלי")
+  const [activePermission, setActivePermission] = useState(null); // 'owner' | 'edit' | 'view'
+  const cloudReadyRef = useRef(false);                    // נטען מהענן? (מונע דריסה לפני טעינה)
+  // מזהה טיול מתוך קישור שיתוף (?trip=...) — נפתח אוטומטית לאחר התחברות
+  const sharedLinkId = useRef(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('trip') : null
+  );
+
+  // מעקב אחרי ה-session הנוכחי
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // טעינת רשימת הטיולים של המשתמש — בעלות + טיולים ששותפו איתו (RLS)
+  const loadTrips = async () => {
+    if (!session) return;
+    setTripsLoading(true);
+    const uid = session.user.id;
+    const email = (session.user.email || '').toLowerCase();
+    const [tripsRes, sharesRes] = await Promise.all([
+      supabase.from('trips').select('id, name, data, updated_at, user_id').order('updated_at', { ascending: false }),
+      supabase.from('trip_shares').select('trip_id, permission').eq('shared_with_email', email)
+    ]);
+    setTripsLoading(false);
+    if (tripsRes.error) { console.error('טעינת טיולים נכשלה:', tripsRes.error.message); return; }
+    const permByTrip = Object.fromEntries((sharesRes.data || []).map(s => [s.trip_id, s.permission]));
+    const annotated = (tripsRes.data || []).map(tr => ({
+      ...tr,
+      shared: tr.user_id !== uid,
+      permission: tr.user_id === uid ? 'owner' : (permByTrip[tr.id] || 'view')
+    }));
+    setTrips(annotated);
+  };
+
+  // בעת התחברות — טען את רשימת הטיולים (לא פותחים אוטומטית)
+  useEffect(() => {
+    cloudReadyRef.current = false;
+    if (!session) { setTrips([]); setActiveTripId(null); return; }
+    loadTrips();
+  }, [session]);
+
+  // פתיחת טיול קיים — טעינת הנתונים שלו אל ה-state + קביעת רמת הרשאה
+  const openTrip = async (id) => {
+    const { data, error } = await supabase
+      .from('trips').select('id, data, user_id').eq('id', id).single();
+    if (error) { console.error('פתיחת טיול נכשלה:', error.message); return; }
+    let permission = 'owner';
+    if (data.user_id !== session.user.id) {
+      const email = (session.user.email || '').toLowerCase();
+      const { data: sh } = await supabase
+        .from('trip_shares').select('permission')
+        .eq('trip_id', id).eq('shared_with_email', email).maybeSingle();
+      permission = sh?.permission || 'view';
+    }
+    cloudReadyRef.current = false;
+    dispatch({ type: 'REPLACE_ALL', data: { ...baseShape(), ...data.data } });
+    setActivePermission(permission);
+    setActiveTripId(id);
+    cloudReadyRef.current = true;
+  };
+
+  // יצירת טיול חדש ופתיחתו מיד
+  const createTrip = async ({ title, country, startDate, numDays }) => {
+    if (!session) return null;
+    const data = makeNewTripData({ title, country, startDate, numDays });
+    const { data: created, error } = await supabase
+      .from('trips')
+      .insert({ user_id: session.user.id, name: data.meta.title, data })
+      .select('id, name, data, updated_at')
+      .single();
+    if (error) { console.error('יצירת טיול נכשלה:', error.message); throw error; }
+    setTrips(prev => [{ ...created, shared: false, permission: 'owner' }, ...prev]);
+    cloudReadyRef.current = false;
+    dispatch({ type: 'REPLACE_ALL', data: { ...baseShape(), ...created.data } });
+    setActivePermission('owner');
+    setActiveTripId(created.id);
+    cloudReadyRef.current = true;
+    return created.id;
+  };
+
+  // חזרה למסך "הטיולים שלי"
+  const closeTrip = () => { setActiveTripId(null); setActivePermission(null); };
+
+  // פתיחה אוטומטית של טיול שהגיע דרך קישור שיתוף (?trip=...)
+  useEffect(() => {
+    if (!session || !sharedLinkId.current || activeTripId) return;
+    const id = sharedLinkId.current;
+    sharedLinkId.current = null;
+    window.history.replaceState({}, '', window.location.pathname); // ניקוי ה-URL
+    openTrip(id);
+  }, [session]);
+
+  // שמירה: localStorage תמיד (cache/גיבוי), ובנוסף ל-Supabase לטיול הפתוח
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    if (!session || !activeTripId || !cloudReadyRef.current) return;
+    if (activePermission === 'view') return; // צפייה בלבד — לא שומרים לענן
+    const t = setTimeout(() => {
+      const name = state.meta?.title || 'טיול';
+      supabase
+        .from('trips')
+        .update({ data: state, name })
+        .eq('id', activeTripId)
+        .then(({ error }) => { if (error) console.error('שמירה נכשלה:', error.message); });
+      // שמירת שם/נתונים מעודכנים גם ברשימה המקומית
+      setTrips(prev => prev.map(tr => tr.id === activeTripId ? { ...tr, name, data: state } : tr));
+    }, 800); // debounce
+    return () => clearTimeout(t);
+  }, [state, session, activeTripId, activePermission]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setGuest(false);
+    setActiveTripId(null);
+    setTrips([]);
+  };
 
   useEffect(() => {
     localStorage.setItem(MODE_KEY, mode);
@@ -241,7 +411,7 @@ export function TripProvider({ children }) {
   };
 
   return (
-    <TripContext.Provider value={{ state, dispatch, mode, setMode, save, exportJson, importJson, importWord }}>
+    <TripContext.Provider value={{ state, dispatch, mode, setMode, save, exportJson, importJson, importWord, session, user: session?.user ?? null, authLoading, guest, setGuest, signOut, trips, tripsLoading, activeTripId, activePermission, loadTrips, openTrip, createTrip, closeTrip }}>
       {children}
     </TripContext.Provider>
   );

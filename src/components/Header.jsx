@@ -1,13 +1,17 @@
 import React, { useRef, useState } from 'react';
 import { useTrip } from '../context/TripContext.jsx';
+import ShareSheet from './ShareSheet.jsx';
 
 // Header ראשי משותף לשני המצבים. רק כפתור המעבר משנה טקסט/אייקון לפי המצב הנוכחי.
 export default function Header() {
-  const { state, mode, setMode, exportJson, importJson, importWord } = useTrip();
+  const { state, mode, setMode, exportJson, importJson, importWord, user, signOut, setGuest, activeTripId, closeTrip, activePermission } = useTrip();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const fileInput = useRef();
   const wordInput = useRef();
   const isPlanning = mode === 'planning';
+  const isOwner = activePermission === 'owner';
+  const isViewOnly = activePermission === 'view';
 
   return (
     <div className="bg-[#E8F3E9] text-brand-ink">
@@ -20,7 +24,9 @@ export default function Header() {
         </button>
         <div className="flex-1 text-center min-w-0">
           <div className="text-[16px] font-bold truncate">{state.meta.title}</div>
-          <div className="text-[12px] text-brand-ink/60">{isPlanning ? 'תכנון' : 'טיול'}</div>
+          <div className="text-[12px] text-brand-ink/60">
+            {isViewOnly ? '👁️ צפייה בלבד' : (isPlanning ? 'תכנון' : 'טיול')}
+          </div>
         </div>
         {/* שמאל — תפריט שלוש נקודות */}
         <div className="relative shrink-0">
@@ -44,6 +50,25 @@ export default function Header() {
                   className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">ייצוא JSON</button>
                 <button onClick={() => { wordInput.current?.click(); setMenuOpen(false); }}
                   className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">ייבוא WORD</button>
+                <div className="my-1 border-t border-black/5" />
+                {user && activeTripId && isOwner && (
+                  <button onClick={() => { setShareOpen(true); setMenuOpen(false); }}
+                    className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">🔗 שתף טיול</button>
+                )}
+                {user && activeTripId && (
+                  <button onClick={() => { closeTrip(); setMenuOpen(false); }}
+                    className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">← הטיולים שלי</button>
+                )}
+                {user ? (
+                  <>
+                    <div className="px-4 py-1 text-[11px] text-brand-muted truncate" dir="ltr">{user.email}</div>
+                    <button onClick={() => { signOut(); setMenuOpen(false); }}
+                      className="w-full text-right px-4 py-2.5 text-[13px] font-semibold text-brand-red hover:bg-black/[0.04]">התנתקות</button>
+                  </>
+                ) : (
+                  <button onClick={() => { setGuest(false); setMenuOpen(false); }}
+                    className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">התחברות / סנכרון</button>
+                )}
               </div>
             </>
           )}
@@ -53,6 +78,7 @@ export default function Header() {
         <input ref={wordInput} type="file" accept=".docx" className="hidden"
           onChange={e => { if (e.target.files?.[0]) importWord(e.target.files[0]); e.target.value = ''; }} />
       </div>
+      {shareOpen && activeTripId && <ShareSheet tripId={activeTripId} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }
