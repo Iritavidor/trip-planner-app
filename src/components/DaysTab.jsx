@@ -77,7 +77,7 @@ export default function DaysTab() {
             </Field>
           </div>
           <Field label="מסעדה ליום">
-            <input className="field" value={day.restaurant}
+            <textarea rows={3} className="field" value={day.restaurant}
               onChange={e => dispatch({ type: 'UPDATE_DAY', dayNumber: dayNum, patch: { restaurant: e.target.value } })} />
           </Field>
           <Field label="הערות ליום">

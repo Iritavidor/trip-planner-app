@@ -282,12 +282,20 @@ export function TripProvider({ children }) {
     setTrips(annotated);
   };
 
-  // בעת התחברות — טען את רשימת הטיולים (לא פותחים אוטומטית)
+  // בעת התחברות/החלפת משתמש — טען את רשימת הטיולים (לא פותחים אוטומטית).
+  // תלוי במזהה המשתמש בלבד, כדי שרענון טוקן או חזרה לטאב (שמחזירים אובייקט session
+  // חדש לאותו משתמש) לא יאפסו את מצב "מוכן לשמירה" ויבטלו שמירות.
+  const userId = session?.user?.id ?? null;
   useEffect(() => {
-    cloudReadyRef.current = false;
-    if (!session) { setTrips([]); setActiveTripId(null); return; }
+    if (!userId) {
+      setTrips([]);
+      setActiveTripId(null);
+      setActivePermission(null);
+      cloudReadyRef.current = false;
+      return;
+    }
     loadTrips();
-  }, [session]);
+  }, [userId]);
 
   // פתיחת טיול קיים — טעינת הנתונים שלו אל ה-state + קביעת רמת הרשאה
   const openTrip = async (id) => {
