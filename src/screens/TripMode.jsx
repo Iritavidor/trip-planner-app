@@ -127,7 +127,7 @@ export default function TripMode() {
                 {day.restaurant && (
                   <div className="card">
                     <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wide mb-1">מסעדה</div>
-                    <div className="text-[15px] font-semibold">🍽️ {day.restaurant}</div>
+                    <div className="text-[15px] font-semibold" style={{ whiteSpace: 'pre-wrap' }}>🍽️ {day.restaurant}</div>
                   </div>
                 )}
                 {day.notes && (
