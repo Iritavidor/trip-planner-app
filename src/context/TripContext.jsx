@@ -230,6 +230,16 @@ function reducer(state, action) {
       const day = state.days[action.dayNumber];
       return { ...state, days: { ...state.days, [action.dayNumber]: { ...day, activities: day.activities.filter(a => a.id !== action.id) } } };
     }
+    case 'REORDER_ACTIVITIES': {
+      const day = state.days[action.dayNumber];
+      const from = day.activities.findIndex(a => a.id === action.activeId);
+      const to = day.activities.findIndex(a => a.id === action.overId);
+      if (from === -1 || to === -1 || from === to) return state;
+      const activities = [...day.activities];
+      const [moved] = activities.splice(from, 1);
+      activities.splice(to, 0, moved);
+      return { ...state, days: { ...state.days, [action.dayNumber]: { ...day, activities } } };
+    }
     case 'ADD_LIST_ITEM':
       return { ...state, [action.list]: [...state[action.list], { id: uid(), text: action.text, checked: false }] };
     case 'TOGGLE_LIST_ITEM':

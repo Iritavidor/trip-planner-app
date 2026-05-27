@@ -2,6 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTrip } from '../context/TripContext.jsx';
 import ActivitySheet from './ActivitySheet.jsx';
 import ActivityEditSheet from './ActivityEditSheet.jsx';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const HE_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const SLOT_STYLE = {
@@ -31,6 +45,17 @@ export default function DaysTab() {
   const tabsRef = useRef(null);
   const day = state.days[dayNum];
   const daysList = Object.values(state.days).sort((a, b) => a.dayNumber - b.dayNumber);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    dispatch({ type: 'REORDER_ACTIVITIES', dayNumber: dayNum, activeId: active.id, overId: over.id });
+  };
 
   useEffect(() => {
     const el = tabsRef.current?.querySelector(`[data-day="${dayNum}"]`);
@@ -94,18 +119,22 @@ export default function DaysTab() {
             <div className="text-[14px]">אין פעילויות ליום זה</div>
           </div>
         ) : (
-          <ol className="space-y-4">
-            {day.activities.map((a, i) => (
-              <ActivityCard
-                key={a.id}
-                a={a}
-                index={i + 1}
-                onPreview={() => setPreviewId(a.id)}
-                onEdit={() => setEditingId(a.id)}
-                onDelete={() => confirm('למחוק פעילות?') && dispatch({ type: 'DELETE_ACTIVITY', dayNumber: dayNum, id: a.id })}
-              />
-            ))}
-          </ol>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={day.activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
+              <ol className="space-y-4">
+                {day.activities.map((a, i) => (
+                  <ActivityCard
+                    key={a.id}
+                    a={a}
+                    index={i + 1}
+                    onPreview={() => setPreviewId(a.id)}
+                    onEdit={() => setEditingId(a.id)}
+                    onDelete={() => confirm('למחוק פעילות?') && dispatch({ type: 'DELETE_ACTIVITY', dayNumber: dayNum, id: a.id })}
+                  />
+                ))}
+              </ol>
+            </SortableContext>
+          </DndContext>
         )}
 
         <button
@@ -144,9 +173,25 @@ export default function DaysTab() {
 
 function ActivityCard({ a, index, onPreview, onEdit, onDelete }) {
   const slot = SLOT_STYLE[a.timeSlot] || SLOT_STYLE.morning;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: a.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto',
+  };
   return (
-    <li className="bg-brand-surface rounded-card shadow-soft overflow-hidden">
-      <button onClick={onPreview} className="w-full text-right p-4 flex gap-3 items-start active:bg-black/[0.02]">
+    <li ref={setNodeRef} style={style} className="bg-brand-surface rounded-card shadow-soft overflow-hidden">
+      <div className="flex items-stretch">
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label="גרור לשינוי סדר"
+          className="shrink-0 px-2 flex items-center text-brand-muted/50 cursor-grab active:cursor-grabbing touch-none"
+        >
+          ⋮⋮
+        </button>
+      <button onClick={onPreview} className="flex-1 text-right p-4 flex gap-3 items-start active:bg-black/[0.02]">
         <div className="shrink-0 w-7 h-7 rounded-full bg-brand-ink text-white text-[13px] font-bold flex items-center justify-center mt-0.5">
           {index}
         </div>
@@ -186,6 +231,7 @@ function ActivityCard({ a, index, onPreview, onEdit, onDelete }) {
           </div>
         )}
       </button>
+      </div>
       <div className="flex border-t border-black/[0.06] text-[12px] font-semibold">
         <button onClick={onEdit} className="flex-1 py-3 text-brand-olive hover:bg-black/[0.02]">✏️ ערוך</button>
         <div className="w-px bg-black/[0.06]" />
