@@ -159,6 +159,20 @@ function reducer(state, action) {
       return action.data;
     case 'UPDATE_META':
       return { ...state, meta: { ...state.meta, ...action.patch } };
+    case 'SET_START_DATE': {
+      const start = action.start;
+      const days = { ...state.days };
+      if (start) {
+        const [y, mo, d] = start.split('-').map(Number);
+        for (const key of Object.keys(days)) {
+          const day = days[key];
+          const dt = new Date(y, mo - 1, d + (day.dayNumber - 1));
+          const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+          days[key] = { ...day, date: iso };
+        }
+      }
+      return { ...state, days, meta: { ...state.meta, dates: { ...state.meta.dates, start } } };
+    }
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'ADD_FLIGHT':
