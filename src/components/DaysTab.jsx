@@ -187,9 +187,9 @@ function ActivityCard({ a, index, onPreview, onEdit, onDelete }) {
           {...attributes}
           {...listeners}
           aria-label="גרור לשינוי סדר"
-          className="shrink-0 px-2 flex items-center text-brand-muted/50 cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 w-11 flex items-center justify-center bg-brand-lime/30 hover:bg-brand-lime/50 text-brand-olive text-2xl leading-none cursor-grab active:cursor-grabbing touch-none"
         >
-          ⋮⋮
+          ⠿
         </button>
       <button onClick={onPreview} className="flex-1 text-right p-4 flex gap-3 items-start active:bg-black/[0.02]">
         <div className="shrink-0 w-7 h-7 rounded-full bg-brand-ink text-white text-[13px] font-bold flex items-center justify-center mt-0.5">
