@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'China Trip Planner',
-        short_name: 'China Trip',
-        description: 'מתכנן טיול לסין - 20 ימים',
+        name: 'אפליקציית תכנון טיולים',
+        short_name: 'תכנון טיולים',
+        description: 'אפליקציית תכנון טיולים',
         theme_color: '#3D4A2A',
         background_color: '#e8f3e9',
         display: 'standalone',
