@@ -18,11 +18,13 @@ export default function OverviewTab() {
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">תאריך התחלה</label>
-            <input type="date" className="field" value={m.dates.start} onChange={e => dispatch({ type: 'SET_START_DATE', start: e.target.value })} />
+            <input type="date" className="field" value={m.dates.start}
+              onChange={e => dispatch({ type: 'SET_TRIP_DATES', start: e.target.value, end: m.dates.end })} />
           </div>
           <div>
             <label className="label">תאריך סיום</label>
-            <input type="date" className="field" value={m.dates.end} onChange={e => upMeta({ dates: { ...m.dates, end: e.target.value } })} />
+            <input type="date" className="field" value={m.dates.end}
+              onChange={e => dispatch({ type: 'SET_TRIP_DATES', start: m.dates.start, end: e.target.value })} />
           </div>
         </div>
         <div>

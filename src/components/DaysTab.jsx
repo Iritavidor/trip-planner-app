@@ -63,6 +63,17 @@ export default function DaysTab() {
     el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [dayNum]);
 
+  // ניהול ימים: הוספה לפני/אחרי, מחיקה — הימים ממוספרים והתאריכים מחושבים מחדש ב-reducer
+  const addDayBefore = () => dispatch({ type: 'ADD_DAY', atDayNumber: dayNum, position: 'before' });
+  const addDayAfter = () => { dispatch({ type: 'ADD_DAY', atDayNumber: dayNum, position: 'after' }); setDayNum(dayNum + 1); };
+  const deleteDay = () => {
+    if (daysList.length <= 1) { alert('לא ניתן למחוק את היום האחרון בטיול.'); return; }
+    if (!confirm('למחוק את היום? כל הפעילויות והנתונים של היום יימחקו.')) return;
+    const newDayNum = dayNum > daysList.length - 1 ? daysList.length - 1 : dayNum;
+    dispatch({ type: 'DELETE_DAY', dayNumber: dayNum });
+    setDayNum(newDayNum);
+  };
+
   return (
     <div>
       <div ref={tabsRef} className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-3 scrollbar-none">
@@ -88,6 +99,15 @@ export default function DaysTab() {
           className="px-4 h-9 rounded-full bg-brand-surface border border-black/[0.05] text-[13px] font-semibold">
           {editDay ? 'סגור' : '✏️ פרטי יום'}
         </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mt-3">
+        <button onClick={addDayBefore}
+          className="px-3 h-9 rounded-full bg-brand-surface border border-black/[0.05] text-[12px] font-semibold">+ יום לפני</button>
+        <button onClick={addDayAfter}
+          className="px-3 h-9 rounded-full bg-brand-surface border border-black/[0.05] text-[12px] font-semibold">+ יום אחרי</button>
+        <button onClick={deleteDay}
+          className="px-3 h-9 rounded-full bg-brand-red/10 text-brand-red text-[12px] font-semibold">🗑 מחק יום</button>
       </div>
 
       {editDay && (

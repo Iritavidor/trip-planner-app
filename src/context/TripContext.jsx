@@ -155,6 +155,39 @@ function load() {
   }
 }
 
+// --- עזרי ניהול ימים דינמי ---
+
+// מבנה יום ריק (dayNumber/date ייקבעו במהלך המספור מחדש)
+function emptyDay() {
+  return { dayNumber: 0, date: '', city: '', activities: [], restaurant: '', notes: '' };
+}
+
+// תאריך ISO לפי היסט ימים מתאריך ההתחלה
+function isoFromStart(startISO, offset) {
+  const [y, mo, d] = startISO.split('-').map(Number);
+  const dt = new Date(y, mo - 1, d + offset);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// מספר ימים כולל בין שני תאריכים (כולל הקצוות)
+function daysInclusive(startISO, endISO) {
+  const [sy, sm, sd] = startISO.split('-').map(Number);
+  const [ey, em, ed] = endISO.split('-').map(Number);
+  const diff = (new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / 86400000;
+  return Math.round(diff) + 1;
+}
+
+// מספור מחדש של רשימת ימים מסודרת + חישוב מחדש של כל התאריכים מתאריך ההתחלה.
+// מחזיר את מפת הימים ותאריך הסיום (end) שמתאים ליום האחרון, או null אם אין תאריך התחלה.
+function renumberDays(ordered, startISO) {
+  const days = {};
+  ordered.forEach((day, i) => {
+    days[i + 1] = { ...day, dayNumber: i + 1, date: startISO ? isoFromStart(startISO, i) : day.date };
+  });
+  const end = startISO && ordered.length ? isoFromStart(startISO, ordered.length - 1) : null;
+  return { days, end };
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case 'REPLACE_ALL':
@@ -174,6 +207,38 @@ function reducer(state, action) {
         }
       }
       return { ...state, days, meta: { ...state.meta, dates: { ...state.meta.dates, start } } };
+    }
+    case 'SET_TRIP_DATES': {
+      // שינוי תאריך התחלה/סיום: מחשב מחדש את מספר הימים מהטווח, מוסיף/מוחק ימים בסוף,
+      // וממספר מחדש את כל הימים והתאריכים מתאריך ההתחלה.
+      const start = action.start ?? state.meta.dates.start;
+      const end = action.end ?? state.meta.dates.end;
+      const ordered = Object.values(state.days).sort((a, b) => a.dayNumber - b.dayNumber);
+      let count = ordered.length;
+      if (start && end) count = Math.max(1, daysInclusive(start, end));
+      const adjusted = ordered.slice(0, count);
+      while (adjusted.length < count) adjusted.push(emptyDay());
+      const rebuilt = renumberDays(adjusted, start);
+      return { ...state, days: rebuilt.days, meta: { ...state.meta, dates: { start, end: rebuilt.end ?? end } } };
+    }
+    case 'ADD_DAY': {
+      // הוספת יום ריק לפני/אחרי יום נתון, ולאחר מכן מספור מחדש וחישוב תאריכים + end
+      const start = state.meta.dates.start;
+      const ordered = Object.values(state.days).sort((a, b) => a.dayNumber - b.dayNumber);
+      const idx = ordered.findIndex(d => d.dayNumber === action.atDayNumber);
+      if (idx === -1) return state;
+      ordered.splice(action.position === 'before' ? idx : idx + 1, 0, emptyDay());
+      const rebuilt = renumberDays(ordered, start);
+      return { ...state, days: rebuilt.days, meta: { ...state.meta, dates: { ...state.meta.dates, end: rebuilt.end ?? state.meta.dates.end } } };
+    }
+    case 'DELETE_DAY': {
+      // מחיקת יום, ולאחר מכן מספור מחדש וחישוב תאריכים + end (לא מאפשר למחוק את היום האחרון)
+      const start = state.meta.dates.start;
+      const ordered = Object.values(state.days).sort((a, b) => a.dayNumber - b.dayNumber)
+        .filter(d => d.dayNumber !== action.dayNumber);
+      if (!ordered.length) return state;
+      const rebuilt = renumberDays(ordered, start);
+      return { ...state, days: rebuilt.days, meta: { ...state.meta, dates: { ...state.meta.dates, end: rebuilt.end ?? state.meta.dates.end } } };
     }
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
