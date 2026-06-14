@@ -149,6 +149,8 @@ export default function TripMode() {
                 )}
               </div>
             )}
+
+            <DayExperiences dayNumber={dayNum} value={day.experiences} />
           </>
         )}
 
@@ -337,6 +339,28 @@ function Info({ label, value }) {
     <div className="bg-brand-bg rounded-soft px-3 py-2">
       <div className="text-[10px] text-brand-muted font-medium">{label}</div>
       <div className="text-[13px] font-bold">{value}</div>
+    </div>
+  );
+}
+
+// חוויות היום — שדה חופשי במצב טיול, עד 1000 תווים, נשמר אוטומטית כשאר השדות
+function DayExperiences({ dayNumber, value }) {
+  const { dispatch } = useTrip();
+  const text = value || '';
+  return (
+    <div className="card mt-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-bold text-brand-muted uppercase tracking-wide">חוויות היום</span>
+        {text && (
+          <button title="מחיקת חוויות היום" className="text-brand-muted"
+            onClick={() => { if (confirm('למחוק את חוויות היום?')) dispatch({ type: 'UPDATE_DAY', dayNumber, patch: { experiences: '' } }); }}>🗑</button>
+        )}
+      </div>
+      <textarea rows={4} maxLength={1000} className="field"
+        placeholder="כתבו כאן את החוויות מהיום…"
+        value={text}
+        onChange={e => dispatch({ type: 'UPDATE_DAY', dayNumber, patch: { experiences: e.target.value } })} />
+      <div className="text-[11px] text-brand-muted text-left mt-1">{text.length}/1000</div>
     </div>
   );
 }
