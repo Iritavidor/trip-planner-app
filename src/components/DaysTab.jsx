@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTrip } from '../context/TripContext.jsx';
 import ActivitySheet from './ActivitySheet.jsx';
 import ActivityEditSheet from './ActivityEditSheet.jsx';
+import DayDocuments from './DayDocuments.jsx';
 import {
   DndContext,
   closestCenter,
@@ -159,6 +160,8 @@ export default function DaysTab() {
             )}
           </div>
         )}
+
+        <DayDocuments dayNumber={dayNum} documents={day.documents} />
       </div>
 
       {previewId && day.activities.find(a => a.id === previewId) && (

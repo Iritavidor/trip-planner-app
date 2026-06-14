@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useTrip } from '../context/TripContext.jsx';
 import Header from '../components/Header.jsx';
 import ActivitySheet from '../components/ActivitySheet.jsx';
+import DayDocuments from '../components/DayDocuments.jsx';
 
 const HE_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 
@@ -151,6 +152,7 @@ export default function TripMode() {
             )}
 
             <DayExperiences dayNumber={dayNum} value={day.experiences} />
+            <DayDocuments dayNumber={dayNum} documents={day.documents} />
           </>
         )}
 
