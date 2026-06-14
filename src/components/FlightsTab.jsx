@@ -28,7 +28,14 @@ export default function FlightsTab() {
 
   const toggle = id => setOpenIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const addFlight = () => dispatch({ type: 'ADD_FLIGHT', flight: { direction: 'הלוך', date: '', departureTime: '', arrivalTime: '', flightNo: '', airline: '', terminal: '', gate: '', confirmationNo: '', seatNo: '', notes: '' } });
+  const addFlight = () => dispatch({ type: 'ADD_FLIGHT', flight: { direction: 'הלוך', date: '', departureTime: '', arrivalTime: '', flightNo: '', airline: '', terminal: '', gate: '', confirmationNo: '', seatNo: '', notes: '', document: null, documentName: '' } });
+
+  const uploadDoc = (id, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => dispatch({ type: 'UPDATE_FLIGHT', id, patch: { document: e.target.result, documentName: file.name } });
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="space-y-3">
@@ -48,7 +55,7 @@ export default function FlightsTab() {
                     {(f.direction || '') + ' · '}{f.airline} {f.flightNo || ''}
                   </div>
                   <div className="text-[12px] text-brand-muted">
-                    {f.date || 'ללא תאריך'}{f.departureTime ? ` · ${f.departureTime}→${f.arrivalTime}` : ''}
+                    {f.date || 'ללא תאריך'}{f.departureTime ? ` · ${f.departureTime}→${f.arrivalTime}` : ''}{f.document ? ' · 📎 מסמך' : ''}
                   </div>
                 </div>
                 <span className="text-brand-muted text-sm">▾</span>
@@ -72,6 +79,20 @@ export default function FlightsTab() {
                   <label className="label">הערות</label>
                   <textarea rows={2} className="field" value={f.notes || ''}
                     onChange={e => dispatch({ type: 'UPDATE_FLIGHT', id: f.id, patch: { notes: e.target.value } })} />
+                </div>
+                <div>
+                  <label className="label">מסמך מצורף (PDF / תמונה)</label>
+                  {f.document ? (
+                    <div className="flex items-center gap-2 bg-brand-bg rounded-soft px-3 py-2">
+                      <a href={f.document} target="_blank" rel="noreferrer" download={f.documentName || 'document'}
+                        className="flex-1 text-[13px] font-semibold text-brand-red truncate">📎 {f.documentName || 'הצג מסמך'}</a>
+                      <button className="text-brand-muted text-sm"
+                        onClick={() => dispatch({ type: 'UPDATE_FLIGHT', id: f.id, patch: { document: null, documentName: '' } })}>הסר</button>
+                    </div>
+                  ) : (
+                    <input type="file" accept="application/pdf,image/*" className="field"
+                      onChange={e => uploadDoc(f.id, e.target.files?.[0])} />
+                  )}
                 </div>
                 <button className="btn bg-brand-red/10 text-brand-red w-full text-sm"
                   onClick={() => confirm('למחוק טיסה?') && dispatch({ type: 'DELETE_FLIGHT', id: f.id })}>מחק</button>

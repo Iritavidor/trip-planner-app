@@ -294,6 +294,7 @@ function FlightsView({ flights }) {
           </div>
           {f.confirmationNo && <div className="text-[12px] text-brand-muted mt-2">אישור: <span className="font-bold text-brand-ink">{f.confirmationNo}</span></div>}
           {f.notes && <div className="text-[13px] text-brand-muted mt-3 pt-3 border-t border-black/[0.06] whitespace-pre-wrap">{f.notes}</div>}
+          <DocLink doc={f.document} name={f.documentName} />
         </div>
       ))}
     </div>
@@ -324,6 +325,7 @@ function HotelsView({ hotels }) {
             {h.address && <a target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(h.address)}`}
               className="flex-1 h-11 rounded-full border border-brand-ink/15 text-brand-ink font-semibold text-[13px] flex items-center justify-center">🗺️ מפה</a>}
           </div>
+          <DocLink doc={h.document} name={h.documentName} />
         </div>
       ))}
     </div>
@@ -336,6 +338,17 @@ function Info({ label, value }) {
       <div className="text-[10px] text-brand-muted font-medium">{label}</div>
       <div className="text-[13px] font-bold">{value}</div>
     </div>
+  );
+}
+
+// מסמך מצורף (טיסה/מלון) שהועלה במצב תכנון — תצוגה בלבד: צפייה/הורדה
+function DocLink({ doc, name }) {
+  if (!doc) return null;
+  return (
+    <a href={doc} target="_blank" rel="noreferrer" download={name || 'document'}
+      className="flex items-center gap-2 mt-3 bg-brand-bg rounded-soft px-3 py-2 text-[13px] font-semibold text-brand-red truncate">
+      📎 {name || 'הצג מסמך'}
+    </a>
   );
 }
 
