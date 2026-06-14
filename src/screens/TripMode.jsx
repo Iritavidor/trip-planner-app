@@ -3,6 +3,7 @@ import { useTrip } from '../context/TripContext.jsx';
 import Header from '../components/Header.jsx';
 import ActivitySheet from '../components/ActivitySheet.jsx';
 import DayDocuments from '../components/DayDocuments.jsx';
+import ListTab from '../components/ListTab.jsx';
 
 const HE_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 
@@ -75,7 +76,7 @@ export default function TripMode() {
 
           {/* View switch */}
           <div className="flex gap-2 px-4 py-2.5 text-[12px]">
-            {[['day', 'היום'], ['flights', 'טיסות'], ['hotels', 'מלונות']].map(([id, label]) => (
+            {[['day', 'היום'], ['flights', 'טיסות'], ['hotels', 'מלונות'], ['tasks', 'משימות']].map(([id, label]) => (
               <button key={id} onClick={() => setView(id)}
                 className={`px-5 h-9 rounded-full font-bold transition ${view === id ? 'bg-brand-lime text-brand-ink shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-brand-muted'}`}>
                 {label}
@@ -158,6 +159,7 @@ export default function TripMode() {
 
         {view === 'flights' && <FlightsView flights={state.flights} />}
         {view === 'hotels' && <HotelsView hotels={state.hotels} />}
+        {view === 'tasks' && <ListTab listKey="tripTasks" title="משימות במהלך הטיול" />}
       </main>
 
       {/* Day navigation arrows */}

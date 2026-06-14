@@ -96,6 +96,7 @@ function makeInitialData() {
     todosTwoWeeks: [],
     todosWeek: [],
     todosDay: [],
+    tripTasks: [],
     generalNotes: ''
   };
 }
@@ -116,6 +117,7 @@ function baseShape() {
     todosTwoWeeks: [],
     todosWeek: [],
     todosDay: [],
+    tripTasks: [],
     generalNotes: ''
   };
 }
