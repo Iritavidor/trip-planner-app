@@ -3,8 +3,11 @@ import bidiFactory from 'bidi-js';
 import { ALEF_REGULAR_BASE64 } from './hebrewFont.js';
 
 // ייצוא PDF של "התכנון היבש" של הטיול, בעברית עם תמיכה ב-RTL.
-// jsPDF אינו מבצע סידור דו-כיווני (BiDi) בעצמו, לכן כל מחרוזת מומרת לסדר חזותי
-// באמצעות bidi-js ומצוירת מיושרת לימין. הפונט Alef משובץ כדי לתמוך בתווים בעברית.
+// כל מחרוזת מומרת לסדר חזותי (visual) באמצעות bidi-js ומצוירת מיושרת לימין —
+// כך עברית יוצאת מימין לשמאל ואנגלית/מספרים נשארים משמאל לימין באותה שורה.
+// מנוע ה-BiDi הפנימי של jsPDF היה מבצע סידור נוסף ומקלקל את הסדר (הופך אנגלית/מספרים),
+// לכן מעבירים לכל text את הדגלים isInputVisual+isOutputVisual שמנטרלים אותו (קלט=פלט חזותי).
+const TEXT_OPTS = { align: 'right', isInputVisual: true, isOutputVisual: true };
 
 const bidi = bidiFactory();
 const FONT = 'Alef';
@@ -49,7 +52,7 @@ export function exportTripPdf(state) {
     const wrapped = doc.splitTextToSize(String(text ?? ''), maxWidth - indent);
     for (const wl of wrapped) {
       ensure(lh + gap);
-      doc.text(visualLine(wl), rightX - indent, y, { align: 'right' });
+      doc.text(visualLine(wl), rightX - indent, y, TEXT_OPTS);
       y += lh + gap;
     }
   };
