@@ -480,6 +480,12 @@ export function TripProvider({ children }) {
     URL.revokeObjectURL(url);
   };
 
+  // ייצוא PDF — טעינה עצלה כדי לא לכלול את jsPDF/הפונט בחבילה הראשית
+  const exportPdf = async () => {
+    const { exportTripPdf } = await import('../utils/exportPdf.js');
+    exportTripPdf(state);
+  };
+
   const importJson = (file) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -510,7 +516,7 @@ export function TripProvider({ children }) {
   };
 
   return (
-    <TripContext.Provider value={{ state, dispatch, mode, setMode, save, exportJson, importJson, importWord, session, user: session?.user ?? null, authLoading, guest, setGuest, signOut, trips, tripsLoading, activeTripId, activePermission, loadTrips, openTrip, createTrip, closeTrip }}>
+    <TripContext.Provider value={{ state, dispatch, mode, setMode, save, exportJson, exportPdf, importJson, importWord, session, user: session?.user ?? null, authLoading, guest, setGuest, signOut, trips, tripsLoading, activeTripId, activePermission, loadTrips, openTrip, createTrip, closeTrip }}>
       {children}
     </TripContext.Provider>
   );

@@ -4,7 +4,7 @@ import ShareSheet from './ShareSheet.jsx';
 
 // Header ראשי משותף לשני המצבים. רק כפתור המעבר משנה טקסט/אייקון לפי המצב הנוכחי.
 export default function Header() {
-  const { state, mode, setMode, exportJson, importJson, importWord, user, signOut, setGuest, activeTripId, closeTrip, activePermission } = useTrip();
+  const { state, mode, setMode, exportJson, exportPdf, importJson, importWord, user, signOut, setGuest, activeTripId, closeTrip, activePermission } = useTrip();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const fileInput = useRef();
@@ -48,6 +48,8 @@ export default function Header() {
                   className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">ייבוא JSON</button>
                 <button onClick={() => { exportJson(); setMenuOpen(false); }}
                   className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">ייצוא JSON</button>
+                <button onClick={() => { exportPdf(); setMenuOpen(false); }}
+                  className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">📄 ייצוא PDF</button>
                 <button onClick={() => { wordInput.current?.click(); setMenuOpen(false); }}
                   className="w-full text-right px-4 py-2.5 text-[13px] font-semibold hover:bg-black/[0.04]">ייבוא WORD</button>
                 <div className="my-1 border-t border-black/5" />
